@@ -3,32 +3,36 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Services\UserService;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    private $userRepository;
+    private $userService;
 
-    public function __construct(UserRepositoryInterface $userRepository)
+    public function __construct(UserService $userService)
     {
-        $this->userRepository = $userRepository;
+        $this->userService = $userService;
     }
 
     public function currentUser()
     {
-        return response()->json($this->userRepository->getCurrentUser());
+        return response()->json($this->userService->getCurrentUser());
     }
 
     public function index(Request $request)
     {
-        $users = $this->userRepository->getAllExcept($request->user()->id);
+        $users = $this->userService->getAllUsersExceptCurrent($request->user()->id);
         return response()->json($users);
     }
 
     public function show($id)
     {
-        $user = $this->userRepository->find($id);
-        return response()->json($user);
+        try {
+            $user = $this->userService->getUserById($id);
+            return response()->json($user);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
     }
 } 
